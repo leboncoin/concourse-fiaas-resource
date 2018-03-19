@@ -1,0 +1,120 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+"""
+Concourse out resource
+"""
+# Python 2 and 3 compatibility
+from __future__ import unicode_literals
+from __future__ import print_function
+
+import json
+import os.path
+import requests
+import sys
+from termcolor import cprint
+import time
+
+from resource import Resource
+
+
+class FiaasDeployment(Resource):
+    """Concourse resource implementation for FIAAS Deployment"""
+
+    SOURCE = {
+        "application_name": str,
+        "config_url": str,
+        "image": str,
+        "namespace": str,
+        "uri": str
+    }
+    PARAMS = {
+        "application_name": str,
+        "config_url": str,
+        "image": str,
+        "namespace": str,
+        "uri": str
+    }
+    COLORS = {
+        "INF": "white",
+        "SUCC": "green",
+        "CRIT": "red"
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(self.__class__, self).__init__(*args, **kwargs)
+
+    def _get_config_param(self, data, params={}):
+        config = {}
+        for p in params.keys():
+            value = data.get(p)
+            if value:
+                value_type = params[p]
+                if value_type is bool:
+                    config[p] = str(value).lower() in ["true", "1", "yes", "y"]
+                elif value_type is None:
+                    config[p] = value
+                else:
+                    try:
+                        config[p] = value_type(value)
+                    except ValueError as e:
+                        msg = "Cannot get config param '%s': %s" % (p, str(e))
+                        self.logger.error(msg)
+        return config
+
+    def notify(self, text, level):
+        cprint(text, self.COLORS[level], file=sys.stderr)
+
+    def deploy(self, config, uri, version):
+        status = "UNKNOWN"
+        rcode = 0
+        self.notify("Starting deployment of '%s'..." % (version), "INF")
+        response = requests.post(uri+'/deploy/', data=config)
+        response.raise_for_status()
+        location = response.headers['Location']
+        while status != "SUCCESS":
+            r = requests.get(location)
+            r.raise_for_status()
+            status = r.json()['status']
+            if status == "FAILED":
+                self.notify("FINISHED: FAILED", "CRIT")
+                self.notify("FIAAS service returned a FAILED status,", "CRIT")
+                self.notify("Please have a look on your K8S cluster.", "CRIT")
+                rcode = 1
+                break
+            else:
+                self.notify("Deployment in progress...", "INF")
+            time.sleep(5)
+        self.notify("FINISHED: SUCCESS!", "SUCC")
+        return rcode
+
+    def metadata(self, rcode, result):
+        statuscode = rcode
+        metadata = []
+        for k in result.keys():
+            metadata.append({"name": str(k), "value": str(result[k])})
+        metadata.append({"name": "statuscode", "value": str(statuscode)})
+        return statuscode, metadata
+
+    def update(self, folder, source, params):
+        config = self._get_config_param(source, self.SOURCE)
+        params = self._get_config_param(params, self.PARAMS)
+        config.update(params)
+        registry, vers = config.get('image').split(':')
+        uri = config.get('uri')
+        config.pop('uri')
+        exitcode = self.deploy(json.dumps(config), uri, vers)
+        rcode, metadata = self.metadata(exitcode, config)
+        uri, vers = config.get('image').split(':')
+        version = {"version": str(vers)}
+        rvalue = {"version": version, "metadata": metadata}
+        return rcode, rvalue
+
+
+if __name__ == '__main__':
+    r = FiaasDeployment()
+    try:
+        rcode = r.run(os.path.basename(__file__))
+    except Exception as e:
+        sys.stderr.write("ERROR: " + str(e) + "\n")
+        sys.exit(1)
+    sys.exit(rcode)

@@ -32,7 +32,7 @@ The **required** parameters are  the same as the ones in `source` section and ca
 
 With all parameters in `resource` section:
 
-```
+```yaml
 ---
 resource_types:
 - name: fiaas
@@ -59,7 +59,8 @@ jobs:
 
 With parameters in `resource` and `put` sections:   
 (**Example:** With staging and production resources)
-```
+
+```yaml
 ---
 resource_types:
 - name: fiaas
