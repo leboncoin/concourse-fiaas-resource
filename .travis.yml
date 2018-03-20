@@ -1,0 +1,28 @@
+sudo: required
+
+services:
+- docker
+
+language: python
+
+python:
+  - "2.7"
+
+env:
+  global:
+  - secure: Y5dCqedFXRrpVdncv7Z60uuMqlKEKAdYWiOqTqcot4HD1n2mE4GFnShVMch1GoT9CbIHajVnpVQSwU4C41Id/2QUAUKymhZiNl8+HecxZBuj0eiEmfok5nDMBnB42FKucHoOs119D+Aat1SB/LrF77W+18duCUrfLtABxebOaCrUjK+p7voNKKD1j9eL8vOxZOyjp9JNnmvTS+p6VyGhf9Um5Pb+Fsiw3KkNLFhXtqYthNAJChFMGkhUchwIV8/S4BUvzSBWNJdbOQHdeLpTPBhsqswE2O6c8gt/ot0q5iucHe0JQ1a0FiHMyW1SSYscm2BCexhmdpI0Vt7Y8SBzg3uK/OIr5MDFvNh+9//Qpd14sh+dj4JqVyjvPMh+m7l8K7tNjzIIEAJD6Afw7JNXSc1YPw48Hr71FouHUgD66YJfjmTuVStoR4FJiYyqgUaoxMmOVHQBf+EOrQDvgx3Tpy3hynF3TGegQA9Ta69662POPYmEBqe7mYOjCRB5n5s0RMVsWjNO/vzts6Zt53bGY/sNGeZubhhz4XkRrt/7wujGmJicEh6A2LngA7MN06PWo0Mot1I3VL9vtMXm7K94BWL/UyMEJ3HLPyo9Pq/jtHqFWqTkwmZAXQCAUQ6xNetdlcumWPLWvG/b0qPeEJtk6uDaS9RHQ2PFegJ1uuugs/4= #DOCKER_EMAIL
+  - secure: mq7yYRRXtUYHRyEqqwmzeSVhMR+/kdT1QADnVADXGPLnSBtrIcMEhlaDGjzTB12lEdXMqkBv2z2t3UxK1kppX/55iYG6kGcZ5pT88vkzlSorm+tkim1ahphG1lWTB6RxPvJRdVjL/dWVcFmuVHmXALI0Y0QvHsPC5soqXGMycNdW7bblHiBJkYIXuqRXr/pZRQarzBEijFkLLZj7s00ntiZF08hNRgcDJT9rGQ8+Ul+3+jGvMwwYZ6/f64xf6arydVFQJNDLTxySQD3awjSuUz0fcJV4V7Ee1V5SEifmITKng8Cvm1SndtXqglRnJ94NmgzGnHGLWLi6pbdLeL3sGNhmDbKruypUuKDXRWf1IhW0wckRlDb/Nv+1zyOP2hjK944UfhWdCZkzN1C1Bxs3wZFXHZYicuS596wVKs+S/Q4Zx5La0A8DntSPaTM5CFTurNHcoJDTr+L/NVWp0bqXvF+ngr6jhyFll30j7UWo7+5dUZR0lVw3GWixStpMRDLRl2ww89PPHIxcC551fsQpSJ1r/AE1gjfXP+yxIO6j9N59Uc0P44Gx0vMUwT7vFTYDYinBzZaztdMeJBAcNi5N+VEMglKad2Zi9Fef3+QkScSHcK9JNDMZ51iVh+HWiG7BnHDSloPYD/+aui4KZ9JkA4Ae2yLK9YbdSqPmarUTLV4= #DOCKER_USER
+  - secure: rV0xmYribBFDN0jNq3SO5lC5RGvpKZzotBI8OSGs7bSOa9m2AGhGA5N40VH1JQetfp4igJ75ST0oBn60bV7wr9ymEJBq+6B3YhmD1Gzd3FH5DaDaY1cKR3sBKgtdcyfP6kcjsJd3zxxGPfmD5GRe+j065BtEmuZH7pR39NLJNOnKilWjmavSoUnitFWn/5BaVqoO+OxqPNf4IZZugtjCenrgJ+TxgN4OIaalaD0udM7DmXIHpbmsIYGJci3n8/BlncMjzawDDf/ObSYIXaVBGC7t2XvJS48c8UIEx0DYx90h/osSSqehe37Ik5rB4n49mCScbVZZSbsdiEZsw1Yry9MOzQlp3hIssvNtcg9Udsl7ORk7jTRYsFKtjKeTw9fzvHo/JShCIpz9y1DNUqoej32D0BGIKLEjV5lTNV8N+6XkJMCAutU77RDLkkRPgPF7rQ+plO1Ty2qMbE4XgYEWRHUq3wRbS+uod37yGRHbDm71BuyFU0+jpagUI5hl67Bx1Pq5PFQVqF68If8ntt/jTHCTbbY+VberJB9T8fxEPFXJbA7eSexLS+oRm3TJ8y6F4BXjtMx0OgR/BEQWjHFZZMB+5CnocBvhkMgp68KzUEqq6P4yCch4qIL4Y3Vj7Om3gbL4k72D8bku4ebDgLOg++79DXF71DddlG6QEIQQ5D0= #DOCKER_PASS
+  - COMMIT=${TRAVIS_COMMIT::8}
+
+script: /bin/true
+
+after_success:
+- docker --version
+- docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+- export REPO=leboncoin/concourse-fiaas-resource
+- export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH; fi`
+- docker build -f Dockerfile -t $REPO:$COMMIT .
+- docker tag $REPO:$COMMIT $REPO:$TAG
+- docker tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+- docker push $REPO
