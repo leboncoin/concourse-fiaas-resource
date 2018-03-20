@@ -1,5 +1,15 @@
 # concourse-fiaas-resource
+
+[![License:MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/leboncoin/concourse-fiaas-resource/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/leboncoin/concourse-fiaas-resource.svg?branch=master)](https://travis-ci.org/leboncoin/concourse-fiaas-resource)
+[![Maintainability](https://api.codeclimate.com/v1/badges/54dc93906670fe7591f0/maintainability)](https://codeclimate.com/github/leboncoin/concourse-fiaas-resource/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/54dc93906670fe7591f0/test_coverage)](https://codeclimate.com/github/leboncoin/concourse-fiaas-resource/test_coverage)
+ 
 A Concourse CI resource for FIAAS deployment.
+
+[FIAAS](https://github.com/fiaas) *(Finn Infrastructure As A Service)* is a contract driven continuous delivery to Kubernetes. Supports CRE and on premise.
+
+More information about FIAAS [here](http://schd.ws/hosted_files/cloudnativeeu2017/ff/finn-no-kubecon.pdf).
 
 ## Source Configuration
 All these parameters are **required** but can be set in the `resource` *(source)* or `put` *(out)* definition.
