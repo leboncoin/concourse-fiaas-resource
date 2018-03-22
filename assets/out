@@ -22,8 +22,6 @@ class FiaasDeployment(Resource):
 
     SOURCE = {
         "application_name": str,
-        "config_url": str,
-        "image": str,
         "namespace": str,
         "uri": str
     }
@@ -43,7 +41,7 @@ class FiaasDeployment(Resource):
     def __init__(self, *args, **kwargs):
         super(self.__class__, self).__init__(*args, **kwargs)
 
-    def _get_config_param(self, data, params={}):
+    def _get_config_param(self, folder, data, params={}):
         config = {}
         for p in params.keys():
             value = data.get(p)
@@ -55,7 +53,12 @@ class FiaasDeployment(Resource):
                     config[p] = value
                 else:
                     try:
-                        config[p] = value_type(value)
+                        if p in ["image", "config_url"]:
+                            with open(os.path.join(folder, value_type(value))) as f:
+                                line = value_type(f.readline().rstrip('\n'))
+                                config[p] = line
+                        else:
+                            config[p] = value_type(value)
                     except ValueError as e:
                         msg = "Cannot get config param '%s': %s" % (p, str(e))
                         self.logger.error(msg)
@@ -80,7 +83,7 @@ class FiaasDeployment(Resource):
                 self.notify("FIAAS service returned a FAILED status,", "CRIT")
                 self.notify("Please have a look on your K8S cluster.", "CRIT")
                 rcode = 1
-                break
+                return rcode
             else:
                 self.notify("Deployment in progress...", "INF")
             time.sleep(5)
@@ -95,11 +98,12 @@ class FiaasDeployment(Resource):
         metadata.append({"name": "statuscode", "value": str(statuscode)})
         return statuscode, metadata
 
-    def update(self, folder, source, params):
-        config = self._get_config_param(source, self.SOURCE)
-        params = self._get_config_param(params, self.PARAMS)
+    def update(self, folder, sourcelist, paramlist):
+        source = self._get_config_param(folder, sourcelist, self.SOURCE)
+        params = self._get_config_param(folder, paramlist, self.PARAMS)
+        config = source.copy()
         config.update(params)
-        registry, vers = config.get('image').split(':')
+        vers = config.get('image').split(':')[-1]
         uri = config.get('uri')
         config.pop('uri')
         exitcode = self.deploy(json.dumps(config), uri, vers)

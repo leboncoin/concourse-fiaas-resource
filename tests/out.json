@@ -2,9 +2,9 @@
   "params": {
     "uri": "http://foo.bar",
     "application_name": "myapp",
-    "config_url": "https://foo.bar/myapp.1.00_dev-1.23-456abc.yml",
+    "config_url": "tests/files/artifact",
     "namespace": "production",
-    "image": "foo.bar/myapp:myapp_1.23_dev-456abc"
+    "image": "tests/files/docker_image"
   },
   "source": { }
 }
