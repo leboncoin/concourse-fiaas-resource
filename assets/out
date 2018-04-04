@@ -20,6 +20,9 @@ from resource import Resource
 class FiaasDeployment(Resource):
     """Concourse resource implementation for FIAAS Deployment"""
 
+    RETRY = 20
+    DELAY = 10
+
     SOURCE = {
         "application_name": str,
         "namespace": str,
@@ -70,6 +73,7 @@ class FiaasDeployment(Resource):
     def deploy(self, config, uri, version):
         status = "UNKNOWN"
         rcode = 0
+        retry = 0
         self.notify("Starting deployment of '%s'..." % (version), "INF")
         response = requests.post(uri+'/deploy/', data=config)
         response.raise_for_status()
@@ -78,15 +82,16 @@ class FiaasDeployment(Resource):
             r = requests.get(location)
             r.raise_for_status()
             status = r.json()['status']
-            if status == "FAILED":
+            if status == "FAILED" or retry == self.RETRY:
                 self.notify("FINISHED: FAILED", "CRIT")
-                self.notify("FIAAS service returned a FAILED status,", "CRIT")
+                self.notify("FIAAS service returned a FAILED or TIMEOUT status,", "CRIT")
                 self.notify("Please have a look on your K8S cluster.", "CRIT")
                 rcode = 1
                 return rcode
             else:
                 self.notify("Deployment in progress...", "INF")
-            time.sleep(5)
+                retry += 1
+            time.sleep(self.DELAY)
         self.notify("FINISHED: SUCCESS!", "SUCC")
         return rcode
 
